@@ -1,5 +1,7 @@
 # SuperTrend Indicator
 
+![SuperTrend Indicator](.github/screenshot.png)
+
 The SuperTrend is a widely used indicator that helps traders identify trend changes across various markets, including equities, cryptocurrencies, forex, and other assets.
 
 This implementation of the SuperTrend differs from traditional versions in two key aspects:
