@@ -1,0 +1,56 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © koraygocmen
+
+//@version=5
+indicator("SuperTrend", overlay=true)
+
+source = input.source(hl2, title="Source")
+band = input.string("StdDev", title="Band", options=["ATR", "StdDev"])
+period = input.int(20, "Period", minval = 1)
+factor = input.float(1, "Factor", minval = 0.01, step = 0.01)
+
+// The same on Pine Script®
+supertrend(src, band, factor, period) =>
+    atr = ta.atr(period)
+    stddev = ta.stdev(src, period)
+
+    upperBand = src + factor * (band == "ATR" ? atr : band == "StdDev" ? stddev : 0)
+    lowerBand = src - factor * (band == "ATR" ? atr : band == "StdDev" ? stddev : 0)
+
+    prevLowerBand = nz(lowerBand[1])
+    prevUpperBand = nz(upperBand[1])
+
+    lowerBand := lowerBand > prevLowerBand or close[1] < prevLowerBand ? lowerBand : prevLowerBand
+    upperBand := upperBand < prevUpperBand or close[1] > prevUpperBand ? upperBand : prevUpperBand
+    
+    int _direction = na
+    float superTrend = na
+    prevSuperTrend = superTrend[1]
+    
+    if na(atr[1])
+        _direction := 1
+    else if prevSuperTrend == prevUpperBand
+        _direction := close > upperBand ? -1 : 1
+    else
+        _direction := close < lowerBand ? 1 : -1
+    
+    superTrend := _direction == -1 ? lowerBand : upperBand
+    [superTrend, _direction]
+
+[supertrend, direction] = supertrend(source, band, factor, period)
+
+supertrend := barstate.isfirst ? na : supertrend
+upTrend =    plot(direction < 0 ? supertrend : na, "Up Trend",   color = color.green, style = plot.style_linebr)
+downTrend =  plot(direction < 0 ? na : supertrend, "Down Trend", color = color.red,   style = plot.style_linebr)
+bodyMiddle = plot(barstate.isfirst ? na : (open + close) / 2, "Body Middle",display = display.none)
+
+fill(bodyMiddle, upTrend,   color.new(color.green, 90), fillgaps = false)
+fill(bodyMiddle, downTrend, color.new(color.red,   90), fillgaps = false)
+
+// Detecting crossovers
+crossedUp = direction[1] > direction
+crossedDown = direction[1] < direction
+
+alertcondition(crossedUp, title='Downtrend to Uptrend', message='The Supertrend value switched from Downtrend to Uptrend ')
+alertcondition(crossedDown, title='Uptrend to Downtrend', message='The Supertrend value switched from Uptrend to Downtrend')
+alertcondition(direction[1] != direction, title='Trend Change', message='The Supertrend value switched from Uptrend to Downtrend or vice versa')
